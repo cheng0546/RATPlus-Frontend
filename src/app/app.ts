@@ -1,10 +1,13 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, computed } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { ApiService } from './services/api.service';
 import { StationDto } from './models/station.dto';
 import { LineDto } from './models/line.dto';
+import { DepartureDto } from './models/departure.dto';
 
 @Component({
   selector: 'app-root',
+  imports: [DatePipe],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
@@ -14,12 +17,30 @@ export class App {
 
   protected readonly lines = signal<LineDto[]>([]);
   protected readonly stations = signal<StationDto[]>([]);
+  protected readonly departures = signal<DepartureDto[]>([]);
+
+  protected readonly selectedLineId = signal<string>('');
+  protected readonly selectedStation = signal<StationDto | null>(null);
+
+  protected readonly groupedDepartures = computed(() => {
+    const groups = new Map<string, DepartureDto[]>();
+
+    for (const departure of this.departures()) {
+      const existing = groups.get(departure.direction);
+
+      if (existing) {
+        existing.push(departure);
+      } else {
+        groups.set(departure.direction, [departure]);
+      }
+    }
+
+    return groups;
+  })
 
   constructor() {
     this.apiService.getLines().subscribe({
       next: lines => {
-        console.log(lines);
-
         const sortedLines = [...lines].sort((a, b) =>
           a.name.localeCompare(b.name, 'fr'));
         this.lines.set(sortedLines);
@@ -34,23 +55,69 @@ export class App {
     const select = event.target as HTMLSelectElement;
     const lineId = select.value;
 
+    this.selectedStation.set(null);
+    this.selectedLineId.set(lineId);
+
     if (!lineId) {
+      console.error('No line selected');
+      this.stations.set([]);
       return;
     }
 
     this.apiService.getStations(lineId).subscribe({
       next: stations => {
-        console.log(stations);
-
         const sortedStations = [...stations].sort((a, b) =>
           a.name.localeCompare(b.name, 'fr'));
+
         this.stations.set(sortedStations);
       },
       error: err => {
         console.log(err);
+        this.stations.set([]);
       }
     })
-
-    console.log(lineId);
   }
+
+  protected onStationSelected(event: Event) {
+    const select = event.target as HTMLSelectElement;
+    const stationName = select.value;
+
+    if (!stationName) {
+      console.error('No station selected');
+      this.selectedStation.set(null);
+      return;
+    }
+
+    const station = this.stations()
+      .find(station => station.name === stationName);
+
+    if (!station) {
+      console.error('Cannot find station');
+      return;
+    }
+
+    this.selectedStation.set(station);
+  }
+
+  protected searchDepartures(): void {
+    this.departures.set([]);
+    const lineId = this.selectedLineId();
+    const station = this.selectedStation();
+
+    if (!lineId || !station) {
+      console.error('Missed line or station');
+      return;
+    }
+
+    this.apiService.getNextDepartures(lineId, station.ids).subscribe({
+      next: departures => {
+        this.departures.set(departures);
+      },
+      error: err => {
+        console.log(err);
+        this.departures.set([]);
+      }
+    })
+  }
+
 }

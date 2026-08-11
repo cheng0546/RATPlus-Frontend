@@ -1,12 +1,12 @@
 <h1>RATPlus</h1>
 
-<label for="line">Select a line:</label>
+<label for="line">Ligne:</label>
 
 <select
   id="line"
   (change)="onLineSelected($event)"
 >
-  <option value="" disabled selected>-- Select a line --</option>
+  <option value="" disabled selected>-- Séléctionnez une ligne --</option>
 
   @for (line of lines(); track line.id) {
     <option [value]="line.id">
@@ -15,10 +15,14 @@
   }
 </select>
 
-<label for="station">Select a station:</label>
+<label for="station">Station:</label>
 
-<select id="station">
-  <option value="" disabled selected>-- Select a station --</option>
+<select
+  id="station"
+  [value]="selectedStation()?.name ?? ''"
+  (change)="onStationSelected($event)"
+>
+  <option value="" disabled selected>-- Sélectionnez une station --</option>
 
   @for (station of stations(); track station.name) {
     <option [value]="station.name">
@@ -26,3 +30,31 @@
     </option>
   }
 </select>
+
+<button
+  type="button"
+  (click)="searchDepartures()"
+  [disabled]="!selectedLineId() || !selectedStation()"
+>
+  Rechercher
+</button>
+
+@if (groupedDepartures().size > 0) {
+  <h2>Prochains départs</h2>
+
+  @for (group of groupedDepartures(); track group[0]) {
+    <section>
+      <h3>Vers {{ group[0] }}</h3>
+
+      @for (departure of group[1]; track departure.departureTime) {
+        <div>
+          Terminus : {{ departure.destination }}
+           ·
+          {{ departure.departureTime | date:'HH:mm':'Europe/Paris' }}
+           ·
+          {{ departure.status }}
+        </div>
+      }
+    </section>
+  }
+}
