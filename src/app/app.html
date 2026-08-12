@@ -1,60 +1,139 @@
-<h1>RATPlus</h1>
+<main class="page">
 
-<label for="line">Ligne:</label>
+  <header class="header">
+    <h1>RATPlus</h1>
+    <p>Prochains départs en Île-de-France</p>
+  </header>
 
-<select
-  id="line"
-  (change)="onLineSelected($event)"
->
-  <option value="" disabled selected>-- Séléctionnez une ligne --</option>
 
-  @for (line of lines(); track line.id) {
-    <option [value]="line.id">
-      {{ line.name }}
-    </option>
-  }
-</select>
+  <div class="search-section">
 
-<label for="station">Station:</label>
+    <section class="search-card">
 
-<select
-  id="station"
-  [value]="selectedStation()?.name ?? ''"
-  (change)="onStationSelected($event)"
->
-  <option value="" disabled selected>-- Sélectionnez une station --</option>
+      <mat-form-field appearance="outline">
+        <mat-label>Ligne</mat-label>
 
-  @for (station of stations(); track station.name) {
-    <option [value]="station.name">
-      {{ station.name }}
-    </option>
-  }
-</select>
+        <mat-select
+          [value]="selectedLineId()"
+          (selectionChange)="onLineSelected($event)"
+        >
+          <mat-option [value]="''">
+            Sélectionnez une ligne
+          </mat-option>
 
-<button
-  type="button"
-  (click)="searchDepartures()"
-  [disabled]="!selectedLineId() || !selectedStation()"
->
-  Rechercher
-</button>
+          @for (line of lines(); track line.id) {
+            <mat-option [value]="line.id">
+              {{ line.name }}
+            </mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
 
-@if (groupedDepartures().size > 0) {
-  <h2>Prochains départs</h2>
 
-  @for (group of groupedDepartures(); track group[0]) {
-    <section>
-      <h3>Vers {{ group[0] }}</h3>
+      <mat-form-field appearance="outline">
+        <mat-label>Station</mat-label>
 
-      @for (departure of group[1]; track departure.departureTime) {
-        <div>
-          Terminus : {{ departure.destination }}
-           ·
-          {{ departure.departureTime | date:'HH:mm':'Europe/Paris' }}
-           ·
-          {{ departure.status }}
-        </div>
-      }
+        <mat-select
+          [value]="selectedStation()?.name ?? ''"
+          (selectionChange)="onStationSelected($event)"
+        >
+          <mat-option [value]="''">
+            Sélectionnez une station
+          </mat-option>
+
+          @for (station of stations(); track station.name) {
+            <mat-option [value]="station.name">
+              {{ station.name }}
+            </mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+
+      <button
+        mat-flat-button
+        type="button"
+        (click)="searchDepartures()"
+        [disabled]="!selectedLineId() || !selectedStation()"
+      >
+        Rechercher
+      </button>
+
     </section>
+
+
+    @if (loading()) {
+      <div class="loading-bar">
+        <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+      </div>
+    }
+
+  </div>
+
+
+  @if (!loading() && groupedDepartures().size > 0) {
+
+    <section class="departures">
+
+      <h2>Prochains départs</h2>
+
+      @for (group of groupedDepartures(); track group[0]) {
+
+        <section class="direction">
+
+          <h3>Vers {{ group[0] }}</h3>
+
+          <div class="departure-list">
+
+            @for (departure of group[1]; track departure.departureTime) {
+
+              <article class="departure-card">
+
+                <div class="departure-time">
+                  {{ departure.departureTime | date:'HH:mm':'Europe/Paris' }}
+                </div>
+
+
+                <div class="departure-info">
+
+                  <span class="destination">
+                    Terminus : {{ departure.destination }}
+                  </span>
+
+
+                  <span
+                    class="status"
+                    [class.status-on-time]="departure.status === 'onTime'"
+                    [class.status-delayed]="departure.status === 'delayed'"
+                    [class.status-cancelled]="departure.status === 'cancelled'"
+                  >
+
+                    <span class="status-dot"></span>
+
+                    {{ formatStatus(departure.status) }}
+
+                  </span>
+
+                </div>
+
+              </article>
+
+            }
+
+          </div>
+
+        </section>
+
+      }
+
+    </section>
+
+  } @else if (!loading() && hasSearched()) {
+
+    <div class="empty-state">
+      Aucun départ disponible.
+    </div>
+
   }
-}
+
+</main>
