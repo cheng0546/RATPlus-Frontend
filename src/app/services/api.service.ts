@@ -7,21 +7,17 @@ import { DepartureDto } from '../models/departure.dto';
 
 @Service()
 export class ApiService {
-
   private readonly http = inject(HttpClient);
 
-  private readonly baseUrl = 'http://localhost:8081';
+  private readonly baseUrl = 'https://ratplus-api.onrender.com';
+  // private readonly baseUrl = 'http://localhost:8081'; // local test
 
   getLines(): Observable<LineDto[]> {
-    return this.http.get<LineDto[]>(
-      `${this.baseUrl}/api/lines`
-    );
+    return this.http.get<LineDto[]>(`${this.baseUrl}/api/lines`);
   }
 
   getStations(lineId: string): Observable<StationDto[]> {
-    return this.http.get<StationDto[]>(
-      `${this.baseUrl}/api/lines/${lineId}/stations`,
-    )
+    return this.http.get<StationDto[]>(`${this.baseUrl}/api/lines/${lineId}/stations`);
   }
 
   getNextDepartures(lineId: string, stationIds: string[]): Observable<DepartureDto[]> {
@@ -31,9 +27,6 @@ export class ApiService {
       params = params.append('stationIds', stationId);
     }
 
-    return this.http.get<DepartureDto[]>(
-      `${this.baseUrl}/api/departures`,
-      { params }
-    )
+    return this.http.get<DepartureDto[]>(`${this.baseUrl}/api/departures`, { params });
   }
 }

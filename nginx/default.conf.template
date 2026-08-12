@@ -1,0 +1,27 @@
+server {
+    listen ${PORT};
+    listen [::]:${PORT};
+    server_name _;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # A lightweight endpoint for Render's HTTP health check.
+    location = /healthz {
+        access_log off;
+        return 204;
+    }
+
+    # Fingerprinted Angular assets can be cached for a long time.
+    location ~* \.(?:css|js|mjs|map|ico|png|jpg|jpeg|gif|svg|webp|woff2?)$ {
+        try_files $uri =404;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Keep index.html fresh, and fall back to it for Angular client-side routes.
+    location / {
+        try_files $uri $uri/ /index.html;
+        add_header Cache-Control "no-cache";
+    }
+}
