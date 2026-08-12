@@ -9,7 +9,8 @@ import { DepartureDto } from '../models/departure.dto';
 export class ApiService {
   private readonly http = inject(HttpClient);
 
-  private readonly baseUrl = 'https://ratplus-api.onrender.com';
+  private readonly baseUrl = 'https://p01--ratplus-api--6wn6spyq82jv.code.run'; // northflank
+  // private readonly baseUrl = 'https://ratplus-api.onrender.com'; // render
   // private readonly baseUrl = 'http://localhost:8081'; // local test
 
   getLines(): Observable<LineDto[]> {
