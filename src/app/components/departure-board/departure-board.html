@@ -46,15 +46,13 @@
       @for (dep of group.items; track dep.departureTime; let first = $first) {
         <article class="item" [class.first]="first" [class.cancelled]="dep.status === 'cancelled'">
           <div class="count">{{ dep.departureTime | date: 'HH:mm' : 'Europe/Paris' }}</div>
-          <div class="meta">
-            <span
-              class="status"
-              [class.status-delayed]="dep.status === 'delayed'"
-              [class.status-cancelled]="dep.status === 'cancelled'"
-            >
-              <span class="dot"></span>{{ statusLabel(dep.status) }}
-            </span>
-          </div>
+          <span
+            class="status"
+            [class.status-delayed]="dep.status === 'delayed'"
+            [class.status-cancelled]="dep.status === 'cancelled'"
+          >
+            <span class="dot"></span>{{ statusLabel(dep.status) }}
+          </span>
         </article>
       }
     </div>
@@ -63,7 +61,7 @@
 
 @if (loaded() && !error()) {
   <div class="footer">
-    <span>Mis à jour à {{ lastUpdate() | date: 'HH:mm' : 'Europe/Paris' }}</span>
+    <span>Mis Ã  jour Ã  {{ lastUpdate() | date: 'HH:mm' : 'Europe/Paris' }}</span>
     <button
       type="button"
       class="refresh"
@@ -73,7 +71,10 @@
       title="Actualiser"
       (click)="refresh()"
     >
-      ?
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+        <path d="M21 3v6h-6" />
+      </svg>
     </button>
   </div>
 }
