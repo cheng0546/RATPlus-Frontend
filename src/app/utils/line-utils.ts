@@ -1,3 +1,22 @@
+export function fixMojibake(value: string): string {
+  if (!/[\u00C2-\u00C5]/.test(value)) {
+    return value;
+  }
+  const bytes = new Uint8Array(value.length);
+  for (let i = 0; i < value.length; i++) {
+    const code = value.charCodeAt(i);
+    if (code > 255) {
+      return value;
+    }
+    bytes[i] = code;
+  }
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  } catch {
+    return value;
+  }
+}
+
 export function shortLineName(name: string): string {
   const stripped = name.replace(/^(ligne|line|métro|metro)\s+/i, '').trim();
   return stripped.length > 4 ? stripped.slice(0, 4) : stripped;

@@ -83,6 +83,7 @@
             [disabled]="stationsLoading()"
             placeholder="Tapez un nom de station"
             (input)="onQueryInput($event)"
+            (focus)="$any($event.target).select()"
           />
           <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onStationSelected($event)">
             @for (station of filteredStations(); track station.name) {

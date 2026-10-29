@@ -46,8 +46,12 @@ export class App {
   );
 
   protected readonly filteredStations = computed(() => {
-    const q = normalize(this.query().trim());
     const all = this.stations();
+    // Show the full list when the input just holds the chosen station's name.
+    if (this.selectedStation()?.name === this.query()) {
+      return all;
+    }
+    const q = normalize(this.query().trim());
     return q ? all.filter((s) => normalize(s.name).includes(q)) : all;
   });
 

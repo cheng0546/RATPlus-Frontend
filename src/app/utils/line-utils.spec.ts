@@ -1,6 +1,12 @@
-import { formatCountdown, minutesUntil, shortLineName } from './line-utils';
+import { fixMojibake, formatCountdown, minutesUntil, shortLineName } from './line-utils';
 
 describe('line-utils', () => {
+  it('repairs double-encoded UTF-8', () => {
+    expect(fixMojibake('Boissy-Saint-LÃ©ger')).toBe('Boissy-Saint-Léger');
+    expect(fixMojibake('Poissy')).toBe('Poissy');
+    expect(fixMojibake('Léger')).toBe('Léger');
+  });
+
   it('shortens line names', () => {
     expect(shortLineName('Ligne 14')).toBe('14');
     expect(shortLineName('7bis')).toBe('7bis');
