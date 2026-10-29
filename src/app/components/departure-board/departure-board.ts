@@ -13,10 +13,8 @@ import { Subscription } from 'rxjs';
 import { ApiService } from '../../services/api.service';
 import { DepartureDto } from '../../models/departure.dto';
 import { StationDto } from '../../models/station.dto';
-import { formatCountdown, minutesUntil } from '../../utils/line-utils';
+import { minutesUntil } from '../../utils/line-utils';
 
-const REFRESH_MS = 30_000;
-const TICK_MS = 10_000;
 const SLOW_HINT_MS = 4_000;
 
 @Component({
@@ -82,26 +80,9 @@ export class DepartureBoard {
       });
     });
 
-    const refreshTimer = setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        this.refresh();
-      }
-    }, REFRESH_MS);
-    const tickTimer = setInterval(() => this.now.set(Date.now()), TICK_MS);
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') {
-        this.now.set(Date.now());
-        this.refresh();
-      }
-    };
-    document.addEventListener('visibilitychange', onVisible);
-
     this.destroyRef.onDestroy(() => {
-      clearInterval(refreshTimer);
-      clearInterval(tickTimer);
       clearTimeout(this.slowTimer);
       this.request?.unsubscribe();
-      document.removeEventListener('visibilitychange', onVisible);
     });
   }
 
@@ -135,14 +116,6 @@ export class DepartureBoard {
 
   protected selectDirection(direction: string): void {
     this.selectedDirection.set(direction);
-  }
-
-  protected minutes(departure: DepartureDto): number {
-    return minutesUntil(departure.departureTime, this.now());
-  }
-
-  protected countdown(departure: DepartureDto): string {
-    return formatCountdown(this.minutes(departure));
   }
 
   protected statusLabel(status: string): string {

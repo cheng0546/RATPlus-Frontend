@@ -19,7 +19,7 @@
       <span class="row-dest">→ {{ group.destination }}</span>
       <span class="row-times">
         @for (dep of group.items.slice(0, 3); track dep.departureTime; let first = $first) {
-          <span [class.next]="first" [class.cancelled]="dep.status === 'cancelled'">{{ countdown(dep) }}</span>
+          <span [class.next]="first" [class.cancelled]="dep.status === 'cancelled'">{{ dep.departureTime | date: 'HH:mm' : 'Europe/Paris' }}</span>
         }
       </span>
     </div>
@@ -45,9 +45,8 @@
     <div class="list">
       @for (dep of group.items; track dep.departureTime; let first = $first) {
         <article class="item" [class.first]="first" [class.cancelled]="dep.status === 'cancelled'">
-          <div class="count">{{ countdown(dep) }}</div>
+          <div class="count">{{ dep.departureTime | date: 'HH:mm' : 'Europe/Paris' }}</div>
           <div class="meta">
-            <span class="clock">{{ dep.departureTime | date: 'HH:mm' : 'Europe/Paris' }}</span>
             <span
               class="status"
               [class.status-delayed]="dep.status === 'delayed'"
@@ -62,13 +61,19 @@
   }
 }
 
-@if (!compact() && loaded() && !error()) {
+@if (loaded() && !error()) {
   <div class="footer">
-    <span>
-      Mis à jour à {{ lastUpdate() | date: 'HH:mm:ss' : 'Europe/Paris' }}
-    </span>
-    <button type="button" class="link" (click)="refresh()" [disabled]="loading()">
-      {{ loading() ? 'Actualisation…' : 'Actualiser' }}
+    <span>Mis � jour � {{ lastUpdate() | date: 'HH:mm' : 'Europe/Paris' }}</span>
+    <button
+      type="button"
+      class="refresh"
+      [class.spinning]="loading()"
+      [disabled]="loading()"
+      aria-label="Actualiser"
+      title="Actualiser"
+      (click)="refresh()"
+    >
+      ?
     </button>
   </div>
 }
