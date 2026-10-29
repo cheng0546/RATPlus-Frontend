@@ -1,8 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
+import { MatSelectChange, MatSelectModule } from '@angular/material/select';
 import { ApiService } from './services/api.service';
 import { Favorite, FavoritesService, MAX_FAVORITES } from './services/favorites.service';
 import { StationDto } from './models/station.dto';
@@ -10,15 +9,9 @@ import { LineDto } from './models/line.dto';
 import { DepartureBoard } from './components/departure-board/departure-board';
 import { LINE_GROUPS, lineColor, lineTextColor, shortLineName } from './utils/line-utils';
 
-const normalize = (value: string) =>
-  value
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
-
 @Component({
   selector: 'app-root',
-  imports: [MatFormFieldModule, MatInputModule, MatAutocompleteModule, DepartureBoard],
+  imports: [MatFormFieldModule, MatSelectModule, DepartureBoard],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
@@ -36,7 +29,6 @@ export class App {
 
   protected readonly selectedLine = signal<LineDto | null>(null);
   protected readonly selectedStation = signal<StationDto | null>(null);
-  protected readonly query = signal('');
 
   protected readonly lineGroups = computed(() =>
     LINE_GROUPS.map((group) => ({
@@ -44,16 +36,6 @@ export class App {
       lines: this.lines().filter((line) => group.modes.includes(line.mode)),
     })).filter((group) => group.lines.length > 0),
   );
-
-  protected readonly filteredStations = computed(() => {
-    const all = this.stations();
-    // Show the full list when the input just holds the chosen station's name.
-    if (this.selectedStation()?.name === this.query()) {
-      return all;
-    }
-    const q = normalize(this.query().trim());
-    return q ? all.filter((s) => normalize(s.name).includes(q)) : all;
-  });
 
   protected readonly isFavorite = computed(() => {
     const line = this.selectedLine();
@@ -95,7 +77,6 @@ export class App {
     }
     this.selectedLine.set(line);
     this.selectedStation.set(null);
-    this.query.set('');
     this.loadStations(line);
   }
 
@@ -117,17 +98,9 @@ export class App {
     });
   }
 
-  protected onQueryInput(event: Event): void {
-    this.query.set((event.target as HTMLInputElement).value);
-    this.selectedStation.set(null);
-  }
-
-  protected onStationSelected(event: MatAutocompleteSelectedEvent): void {
-    const station = this.stations().find((s) => s.name === event.option.value);
-    if (station) {
-      this.query.set(station.name);
-      this.selectedStation.set(station);
-    }
+  protected onStationSelected(event: MatSelectChange): void {
+    const station = this.stations().find((s) => s.name === event.value);
+    this.selectedStation.set(station ?? null);
   }
 
   protected toggleFavorite(): void {
