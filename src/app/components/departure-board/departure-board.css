@@ -214,8 +214,10 @@
   border-radius: 50%;
   background: var(--surface-2);
   color: var(--fg);
-  font-size: 20px;
-  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
   cursor: pointer;
 }
 
