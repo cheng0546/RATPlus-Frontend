@@ -7,7 +7,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "RATPlus-Frontend": {
+    "le-metro-arrive": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -55,10 +55,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "RATPlus-Frontend:build:production"
+              "buildTarget": "le-metro-arrive:build:production"
             },
             "development": {
-              "buildTarget": "RATPlus-Frontend:build:development"
+              "buildTarget": "le-metro-arrive:build:development"
             }
           },
           "defaultConfiguration": "development"
