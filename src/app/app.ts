@@ -1,142 +1,146 @@
-import { Component, inject, signal, computed } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import { Component, computed, inject, signal } from '@angular/core';
+import { Subscription } from 'rxjs';
+import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatSelectModule } from '@angular/material/select';
-import { MatButtonModule } from '@angular/material/button';
-import { MatSelectChange } from '@angular/material/select';
-import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatInputModule } from '@angular/material/input';
 import { ApiService } from './services/api.service';
+import { Favorite, FavoritesService, MAX_FAVORITES } from './services/favorites.service';
 import { StationDto } from './models/station.dto';
 import { LineDto } from './models/line.dto';
-import { DepartureDto } from './models/departure.dto';
+import { DepartureBoard } from './components/departure-board/departure-board';
+import { lineColor, shortLineName } from './utils/line-utils';
+
+const normalize = (value: string) =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
 
 @Component({
   selector: 'app-root',
-  imports: [DatePipe, MatFormFieldModule, MatSelectModule, MatButtonModule, MatProgressBarModule],
+  imports: [MatFormFieldModule, MatInputModule, MatAutocompleteModule, DepartureBoard],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
 export class App {
   private readonly apiService = inject(ApiService);
+  protected readonly favoritesService = inject(FavoritesService);
 
+  protected readonly maxFavorites = MAX_FAVORITES;
   protected readonly lines = signal<LineDto[]>([]);
+  protected readonly linesLoading = signal(true);
+  protected readonly linesError = signal(false);
   protected readonly stations = signal<StationDto[]>([]);
-  protected readonly departures = signal<DepartureDto[]>([]);
+  protected readonly stationsLoading = signal(false);
+  protected readonly stationsError = signal(false);
 
-  protected readonly selectedLineId = signal<string>('');
+  protected readonly selectedLine = signal<LineDto | null>(null);
   protected readonly selectedStation = signal<StationDto | null>(null);
+  protected readonly query = signal('');
 
-  protected readonly loading = signal(false);
-  protected readonly hasSearched = signal(false);
-
-  protected readonly groupedDepartures = computed(() => {
-    const groups = new Map<string, DepartureDto[]>();
-
-    for (const departure of this.departures()) {
-      const existing = groups.get(departure.direction);
-
-      if (existing) {
-        existing.push(departure);
-      } else {
-        groups.set(departure.direction, [departure]);
-      }
-    }
-
-    return groups;
+  protected readonly filteredStations = computed(() => {
+    const q = normalize(this.query().trim());
+    const all = this.stations();
+    return q ? all.filter((s) => normalize(s.name).includes(q)) : all;
   });
 
+  protected readonly isFavorite = computed(() => {
+    const line = this.selectedLine();
+    const station = this.selectedStation();
+    return !!line && !!station && this.favoritesService.has(line.id, station.name);
+  });
+
+  protected readonly favoritesFull = computed(
+    () => this.favoritesService.favorites().length >= MAX_FAVORITES,
+  );
+
+  private stationsRequest?: Subscription;
+
   constructor() {
+    this.loadLines();
+  }
+
+  protected loadLines(): void {
+    this.linesLoading.set(true);
+    this.linesError.set(false);
+
     this.apiService.getLines().subscribe({
       next: (lines) => {
-        const sortedLines = [...lines].sort((a, b) => a.name.localeCompare(b.name, 'fr'));
-        this.lines.set(sortedLines);
+        this.lines.set(
+          [...lines].sort((a, b) => a.name.localeCompare(b.name, 'fr', { numeric: true })),
+        );
+        this.linesLoading.set(false);
       },
-      error: (err) => {
-        console.log(err);
+      error: () => {
+        this.linesError.set(true);
+        this.linesLoading.set(false);
       },
     });
   }
 
-  protected onLineSelected(event: MatSelectChange) {
-    const lineId = event.value;
-
+  protected selectLine(line: LineDto): void {
+    if (this.selectedLine()?.id === line.id) {
+      return;
+    }
+    this.selectedLine.set(line);
     this.selectedStation.set(null);
-    this.selectedLineId.set(lineId);
+    this.query.set('');
+    this.loadStations(line);
+  }
 
-    if (!lineId) {
-      console.error('No line selected');
-      this.stations.set([]);
-      return;
-    }
+  protected loadStations(line: LineDto): void {
+    this.stationsRequest?.unsubscribe();
+    this.stations.set([]);
+    this.stationsLoading.set(true);
+    this.stationsError.set(false);
 
-    this.apiService.getStations(lineId).subscribe({
+    this.stationsRequest = this.apiService.getStations(line.id).subscribe({
       next: (stations) => {
-        const sortedStations = [...stations].sort((a, b) => a.name.localeCompare(b.name, 'fr'));
-
-        this.stations.set(sortedStations);
+        this.stations.set([...stations].sort((a, b) => a.name.localeCompare(b.name, 'fr')));
+        this.stationsLoading.set(false);
       },
-      error: (err) => {
-        console.log(err);
-        this.stations.set([]);
+      error: () => {
+        this.stationsError.set(true);
+        this.stationsLoading.set(false);
       },
     });
   }
 
-  protected onStationSelected(event: MatSelectChange) {
-    const stationName = event.value;
-
-    if (!stationName) {
-      console.error('No station selected');
-      this.selectedStation.set(null);
-      return;
-    }
-
-    const station = this.stations().find((station) => station.name === stationName);
-
-    if (!station) {
-      console.error('Cannot find station');
-      return;
-    }
-
-    this.selectedStation.set(station);
+  protected onQueryInput(event: Event): void {
+    this.query.set((event.target as HTMLInputElement).value);
+    this.selectedStation.set(null);
   }
 
-  protected searchDepartures(): void {
-    this.departures.set([]);
-    const lineId = this.selectedLineId();
+  protected onStationSelected(event: MatAutocompleteSelectedEvent): void {
+    const station = this.stations().find((s) => s.name === event.option.value);
+    if (station) {
+      this.query.set(station.name);
+      this.selectedStation.set(station);
+    }
+  }
+
+  protected toggleFavorite(): void {
+    const line = this.selectedLine();
     const station = this.selectedStation();
-
-    if (!lineId || !station) {
-      console.error('Missed line or station');
+    if (!line || !station) {
       return;
     }
-
-    this.hasSearched.set(true);
-    this.loading.set(true);
-
-    this.apiService.getNextDepartures(lineId, station.ids).subscribe({
-      next: (departures) => {
-        this.departures.set(departures);
-        this.loading.set(false);
-      },
-      error: (err) => {
-        console.log(err);
-        this.departures.set([]);
-        this.loading.set(false);
-      },
-    });
+    if (this.isFavorite()) {
+      this.favoritesService.remove(line.id, station.name);
+    } else {
+      this.favoritesService.add({ lineId: line.id, lineName: line.name, station });
+    }
   }
 
-  protected formatStatus(status: string): string {
-    switch (status) {
-      case 'onTime':
-        return "À l'heure";
-      case 'delayed':
-        return 'En retard';
-      case 'cancelled':
-        return 'Annulé';
-      default:
-        return status;
-    }
+  protected removeFavorite(favorite: Favorite): void {
+    this.favoritesService.remove(favorite.lineId, favorite.station.name);
+  }
+
+  protected badge(name: string): string {
+    return shortLineName(name);
+  }
+
+  protected color(name: string): string {
+    return lineColor(name);
   }
 }

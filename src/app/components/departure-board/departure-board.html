@@ -1,0 +1,74 @@
+@if (error()) {
+  <div class="notice notice-error" role="alert">
+    <span>Impossible de charger les horaires.</span>
+    <button type="button" class="link" (click)="refresh()">Réessayer</button>
+  </div>
+} @else if (!loaded()) {
+  <div class="skeleton" aria-busy="true">
+    <div class="skeleton-line wide"></div>
+    <div class="skeleton-line"></div>
+    @if (slow()) {
+      <p class="hint">Le serveur se réveille, cela peut prendre quelques secondes…</p>
+    }
+  </div>
+} @else if (groups().length === 0) {
+  <div class="notice">Aucun départ prévu pour le moment.</div>
+} @else if (compact()) {
+  @for (group of groups(); track group.direction) {
+    <div class="row">
+      <span class="row-dest">→ {{ group.destination }}</span>
+      <span class="row-times">
+        @for (dep of group.items.slice(0, 3); track dep.departureTime; let first = $first) {
+          <span [class.next]="first" [class.cancelled]="dep.status === 'cancelled'">{{ countdown(dep) }}</span>
+        }
+      </span>
+    </div>
+  }
+} @else {
+  @if (groups().length > 1) {
+    <div class="tabs" role="tablist">
+      @for (group of groups(); track group.direction) {
+        <button
+          type="button"
+          role="tab"
+          [class.active]="group === activeGroup()"
+          [attr.aria-selected]="group === activeGroup()"
+          (click)="selectDirection(group.direction)"
+        >
+          → {{ group.destination }}
+        </button>
+      }
+    </div>
+  }
+
+  @if (activeGroup(); as group) {
+    <div class="list">
+      @for (dep of group.items; track dep.departureTime; let first = $first) {
+        <article class="item" [class.first]="first" [class.cancelled]="dep.status === 'cancelled'">
+          <div class="count">{{ countdown(dep) }}</div>
+          <div class="meta">
+            <span class="clock">{{ dep.departureTime | date: 'HH:mm' : 'Europe/Paris' }}</span>
+            <span
+              class="status"
+              [class.status-delayed]="dep.status === 'delayed'"
+              [class.status-cancelled]="dep.status === 'cancelled'"
+            >
+              <span class="dot"></span>{{ statusLabel(dep.status) }}
+            </span>
+          </div>
+        </article>
+      }
+    </div>
+  }
+}
+
+@if (!compact() && loaded() && !error()) {
+  <div class="footer">
+    <span>
+      Mis à jour à {{ lastUpdate() | date: 'HH:mm:ss' : 'Europe/Paris' }}
+    </span>
+    <button type="button" class="link" (click)="refresh()" [disabled]="loading()">
+      {{ loading() ? 'Actualisation…' : 'Actualiser' }}
+    </button>
+  </div>
+}
