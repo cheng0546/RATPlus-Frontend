@@ -74,24 +74,16 @@
       @if (selectedLine(); as line) {
         <mat-form-field appearance="outline" class="station-field">
           <mat-label>Station sur {{ line.name }}</mat-label>
-          <input
-            matInput
-            type="text"
-            autocomplete="off"
-            [value]="query()"
-            [matAutocomplete]="auto"
+          <mat-select
+            [value]="selectedStation()?.name ?? ''"
             [disabled]="stationsLoading()"
-            placeholder="Tapez un nom de station"
-            (input)="onQueryInput($event)"
-            (focus)="$any($event.target).select()"
-          />
-          <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onStationSelected($event)">
-            @for (station of filteredStations(); track station.name) {
+            placeholder="Choisissez une station"
+            (selectionChange)="onStationSelected($event)"
+          >
+            @for (station of stations(); track station.name) {
               <mat-option [value]="station.name">{{ station.name }}</mat-option>
-            } @empty {
-              <mat-option disabled>Aucune station trouvée</mat-option>
             }
-          </mat-autocomplete>
+          </mat-select>
         </mat-form-field>
 
         @if (stationsLoading()) {
