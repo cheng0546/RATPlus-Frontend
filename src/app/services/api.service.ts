@@ -1,6 +1,7 @@
 import { inject, Service } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
+import { fixMojibake } from '../utils/line-utils';
 import { LineDto } from '../models/line.dto';
 import { StationDto } from '../models/station.dto';
 import { DepartureDto } from '../models/departure.dto';
@@ -28,6 +29,14 @@ export class ApiService {
       params = params.append('stationIds', stationId);
     }
 
-    return this.http.get<DepartureDto[]>(`${this.baseUrl}/api/departures`, { params });
+    return this.http.get<DepartureDto[]>(`${this.baseUrl}/api/departures`, { params }).pipe(
+      map((departures) =>
+        departures.map((d) => ({
+          ...d,
+          direction: fixMojibake(d.direction),
+          destination: fixMojibake(d.destination),
+        })),
+      ),
+    );
   }
 }

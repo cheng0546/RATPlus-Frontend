@@ -8,7 +8,7 @@ import { Favorite, FavoritesService, MAX_FAVORITES } from './services/favorites.
 import { StationDto } from './models/station.dto';
 import { LineDto } from './models/line.dto';
 import { DepartureBoard } from './components/departure-board/departure-board';
-import { lineColor, shortLineName } from './utils/line-utils';
+import { LINE_GROUPS, lineColor, lineTextColor, shortLineName } from './utils/line-utils';
 
 const normalize = (value: string) =>
   value
@@ -38,9 +38,20 @@ export class App {
   protected readonly selectedStation = signal<StationDto | null>(null);
   protected readonly query = signal('');
 
+  protected readonly lineGroups = computed(() =>
+    LINE_GROUPS.map((group) => ({
+      label: group.label,
+      lines: this.lines().filter((line) => group.modes.includes(line.mode)),
+    })).filter((group) => group.lines.length > 0),
+  );
+
   protected readonly filteredStations = computed(() => {
-    const q = normalize(this.query().trim());
     const all = this.stations();
+    // Show the full list when the input just holds the chosen station's name.
+    if (this.selectedStation()?.name === this.query()) {
+      return all;
+    }
+    const q = normalize(this.query().trim());
     return q ? all.filter((s) => normalize(s.name).includes(q)) : all;
   });
 
@@ -142,5 +153,9 @@ export class App {
 
   protected color(name: string): string {
     return lineColor(name);
+  }
+
+  protected textColor(name: string): string {
+    return lineTextColor(name);
   }
 }

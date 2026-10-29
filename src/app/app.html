@@ -14,7 +14,7 @@
         @for (fav of favoritesService.favorites(); track fav.lineId + fav.station.name) {
           <article class="card">
             <div class="card-head">
-              <span class="badge" [style.background]="color(fav.lineName)">{{ badge(fav.lineName) }}</span>
+              <span class="badge" [style.background]="color(fav.lineName)" [style.color]="textColor(fav.lineName)">{{ badge(fav.lineName) }}</span>
               <span class="card-title">{{ fav.station.name }}</span>
               <button
                 type="button"
@@ -45,20 +45,28 @@
           <button type="button" class="link" (click)="loadLines()">Réessayer</button>
         </p>
       } @else {
-        <div class="lines" role="radiogroup" aria-label="Ligne">
-          @for (line of lines(); track line.id) {
-            <button
-              type="button"
-              class="badge badge-btn"
-              role="radio"
-              [attr.aria-checked]="selectedLine()?.id === line.id"
-              [attr.aria-label]="line.name"
-              [class.selected]="selectedLine()?.id === line.id"
-              [style.background]="color(line.name)"
-              (click)="selectLine(line)"
-            >
-              {{ badge(line.name) }}
-            </button>
+        <div class="line-groups" role="radiogroup" aria-label="Ligne">
+          @for (group of lineGroups(); track group.label) {
+            <div class="line-group">
+              <span class="group-label">{{ group.label }}</span>
+              <div class="lines">
+                @for (line of group.lines; track line.id) {
+                  <button
+                    type="button"
+                    class="badge badge-btn"
+                    role="radio"
+                    [attr.aria-checked]="selectedLine()?.id === line.id"
+                    [attr.aria-label]="group.label + ' ' + line.name"
+                    [class.selected]="selectedLine()?.id === line.id"
+                    [style.background]="color(line.name)"
+                    [style.color]="textColor(line.name)"
+                    (click)="selectLine(line)"
+                  >
+                    {{ badge(line.name) }}
+                  </button>
+                }
+              </div>
+            </div>
           }
         </div>
       }
@@ -75,6 +83,7 @@
             [disabled]="stationsLoading()"
             placeholder="Tapez un nom de station"
             (input)="onQueryInput($event)"
+            (focus)="$any($event.target).select()"
           />
           <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onStationSelected($event)">
             @for (station of filteredStations(); track station.name) {
@@ -101,7 +110,7 @@
       @if (selectedStation(); as station) {
         <article class="card result">
           <div class="card-head">
-            <span class="badge" [style.background]="color(line.name)">{{ badge(line.name) }}</span>
+            <span class="badge" [style.background]="color(line.name)" [style.color]="textColor(line.name)">{{ badge(line.name) }}</span>
             <span class="card-title">{{ station.name }}</span>
             <button
               type="button"
